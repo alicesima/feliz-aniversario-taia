@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Feliz Aniversário, Taia ♥</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Montserrat:wght@200;300&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ════════════════════════════════════════════
+       RESET E BASE
+       ════════════════════════════════════════════ */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      /* desativa rolagem suave nativa para que o JS
+         controle a animação quadro a quadro */
+      scroll-behavior: auto;
+    }
+
+    body {
+      background: #060912; /* azul-preto profundo, como o fundo do mar */
+      color: #f0ece4;
+      font-family: 'Montserrat', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ════════════════════════════════════════════
+       CONTAINER DE SCROLL
+       Altura de 600vh = a página tem 6x a tela,
+       todo esse espaço de rolagem alimenta a animação
+       ════════════════════════════════════════════ */
+    #historia-scroll {
+      height: 600vh;
+      position: relative;
+    }
+
+    /* ════════════════════════════════════════════
+       PALCO FIXO (sticky)
+       Fica colado no topo enquanto o usuário rola.
+       A animação acontece aqui dentro.
+       ════════════════════════════════════════════ */
+    #palco {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background: #060912;
+    }
+
+    /* ════════════════════════════════════════════
+       ESTRELAS DE FUNDO
+       Criadas dinamicamente pelo JS e espalhadas
+       por toda a tela desde o início até o fim
+       ════════════════════════════════════════════ */
+    #estrelas {
+      position: absolute;
+      inset: 0;          /* cobre 100% do palco */
+      pointer-events: none;
+      z-index: 0;        /* fica atrás de tudo */
+    }
+
+    /* Cada estrela individual */
+    .estrela {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      /* --t e --d são variáveis CSS definidas inline pelo JS
+         para que cada estrela tenha tempo e atraso únicos */
+      animation: piscar var(--t, 4s) ease-in-out var(--d, 0s) infinite alternate;
+    }
+
+    /* Animação de piscar: alterna entre quase invisível e bem visível */
+    @keyframes piscar {
+      from { opacity: 0.04; }
+      to   { opacity: 0.45; }
+    }
+
+    /* ════════════════════════════════════════════
+       BOLHAS QUE SOBEM
+       Elemento decorativo: pequenos círculos que
+       surgem do fundo e flutuam para cima
+       ════════════════════════════════════════════ */
+    #bolhas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bolha {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(100, 180, 255, 0.2);
+      opacity: 0;
+      /* --dur e --delay também vêm do JS */
+      animation: subir var(--dur, 12s) ease-in var(--delay, 0s) infinite;
+    }
+
+    @keyframes subir {
+      0%   { transform: translateY(110vh) scale(0.5); opacity: 0; }
+      10%  { opacity: 0.45; }
+      90%  { opacity: 0.12; }
+      100% { transform: translateY(-10vh) scale(1.3); opacity: 0; }
+    }
+
+    /* ════════════════════════════════════════════
+       CANVAS SVG — onde os peixes e o beijo vivem
+       Ocupa 100% do palco, z-index 1 (sobre o fundo)
+       ════════════════════════════════════════════ */
+    #cena {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* ════════════════════════════════════════════
+       CORAÇÃO — overlay que cresce sobre a cena
+       Começa invisível (opacity: 0) e aparece
+       conforme o scroll avança
+       ════════════════════════════════════════════ */
+    #coracao-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;           /* invisível no início */
+      pointer-events: none;
+    }
+
+    /* O SVG do coração em si; transform-origin no centro
+       para que a escala cresça a partir do meio da tela */
+    #coracao-svg {
+      width: min(95vw, 95vh);
+      height: min(95vw, 95vh);
+      transform-origin: center center;
+      transform: scale(0.001); /* começa minúsculo */
+    }
+
+    /* ════════════════════════════════════════════
+       MENSAGEM dentro do coração
+       Aparece somente no final da animação
+       ════════════════════════════════════════════ */
+    #mensagem {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .msg-topo {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: clamp(1.6rem, 5.5vw, 3.5rem);
+      color: rgba(255, 248, 240, 0.93);
+      letter-spacing: 0.07em;
+    }
+
+    .msg-principal {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(2.6rem, 10vw, 6rem);
+      color: #fff8f0;
+      letter-spacing: 0.05em;
+      line-height: 1.05;
+    }
+
+    .msg-linha {
+      width: 65px;
+      height: 1px;
+      background: rgba(255, 248, 240, 0.35);
+      margin: 1rem auto;
+    }
+
+    /* ════════════════════════════════════════════
+       DICA DE SCROLL
+       Aparece no início e some quando o usuário começa a rolar
+       ════════════════════════════════════════════ */
+    #dica {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      opacity: 1;
+      transition: opacity 0.5s;
+    }
+
+    /* Classe adicionada pelo JS para esconder a dica */
+    #dica.oculto {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .dica-texto {
+      font-size: 0.58rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(150, 200, 255, 0.6);
+    }
+
+    /* Setinha animada apontando para baixo */
+    .dica-seta {
+      width: 18px;
+      height: 18px;
+      border-right: 1px solid rgba(150, 200, 255, 0.6);
+      border-bottom: 1px solid rgba(150, 200, 255, 0.6);
+      transform: rotate(45deg);
+      animation: pular 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pular {
+      0%, 100% { transform: rotate(45deg) translateY(0); }
+      50%       { transform: rotate(45deg) translateY(5px); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     CONTAINER PRINCIPAL DE SCROLL
+     ══════════════════════════════════════════════ -->
+<div id="historia-scroll">
+<div id="palco">
+
+  <!-- Camada de estrelas (fundo fixo, sempre visível) -->
+  <div id="estrelas"></div>
+
+  <!-- Camada de bolhas decorativas -->
+  <div id="bolhas"></div>
+
+  <!-- ══════════════════════════════════════════
+       CENA SVG PRINCIPAL
+       ViewBox 800×600 — coordenadas virtuais.
+       O centro é (400, 300).
+       ══════════════════════════════════════════ -->
+  <svg id="cena"
+       viewBox="0 0 800 600"
+       preserveAspectRatio="xMidYMid meet"
+       xmlns="http://www.w3.org/2000/svg">
+
+    <defs>
+      <!-- Gradiente radial para o fundo aquático -->
+      <radialGradient id="grad-fundo" cx="50%" cy="50%" r="70%">
+        <stop offset="0%"   stop-color="#0a1628"/>
+        <stop offset="100%" stop-color="#060912"/>
+      </radialGradient>
+
+      <!-- Filtro de brilho suave nos peixes -->
+      <filter id="brilho" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge>
+          <feMergeNode in="b"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+
+    <!-- Retângulo de fundo da cena -->
+    <rect width="800" height="600" fill="url(#grad-fundo)"/>
+
+    <!-- Linhas de reflexo d'água (decorativas, muito sutis) -->
+    <g opacity="0.04" stroke="#6ab4ff" stroke-width="1">
+      <line x1="0" y1="180" x2="800" y2="184"/>
+      <line x1="0" y1="360" x2="800" y2="356"/>
+      <line x1="0" y1="480" x2="800" y2="483"/>
+    </g>
+
+    <!-- ══════════════════════════════════════
+         PEIXE AZUL (esquerda → nada para direita)
+         Cor principal: #133a75
+         Centro inicial do grupo: (0,0), posicionado pelo JS
+         ══════════════════════════════════════ -->
+    <g id="peixe-azul" filter="url(#brilho)">
+
+      <!-- CAUDA: triângulo em leque, atrás do corpo.
+           Dois triângulos sobrepostos para dar volume -->
+      <polygon points="-50,0 -75,-28 -68,0"  fill="#0d2d5e"/>
+      <polygon points="-50,0 -75, 28 -68,0"  fill="#0d2d5e"/>
+      <!-- Linha central da cauda -->
+      <line x1="-50" y1="0" x2="-75" y2="-28" stroke="#091e40" stroke-width="1.2"/>
+      <line x1="-50" y1="0" x2="-75" y2=" 28" stroke="#091e40" stroke-width="1.2"/>
+      <line x1="-50" y1="0" x2="-78" y2="  0" stroke="#091e40" stroke-width="1.2"/>
+
+      <!-- CORPO PRINCIPAL: elipse arredondada -->
+      <ellipse cx="0" cy="0" rx="50" ry="24" fill="#133a75"/>
+
+      <!-- REFLEXO no corpo: elipse menor mais clara no topo -->
+      <ellipse cx="-5" cy="-7" rx="24" ry="9" fill="rgba(100,160,255,0.22)"/>
+
+      <!-- BARBATANA DORSAL (em cima) -->
+      <path d="M-15,-24 Q-2,-44 16,-24" fill="#0d2d5e" stroke="#091e40" stroke-width="1"/>
+
+      <!-- BARBATANA PEITORAL (lateral, pequena) -->
+      <ellipse cx="8" cy="11" rx="14" ry="6"
+               fill="#0d2d5e" opacity="0.85"
+               transform="rotate(20,8,11)"/>
+
+      <!-- BARBATANA ANAL (em baixo, menor) -->
+      <path d="M-5,24 Q4,36 14,24" fill="#0d2d5e" stroke="#091e40" stroke-width="0.8"/>
+
+      <!-- ESCAMAS: arcos curvos que simulam textura -->
+      <path d="M-10,0 Q-3,-13 7,-4"    stroke="rgba(80,130,220,0.35)" stroke-width="1.2" fill="none"/>
+      <path d="M  2,3 Q  9,-10 18,-2"  stroke="rgba(80,130,220,0.35)" stroke-width="1.2" fill="none"/>
+      <path d="M-22,1 Q-15,-11 -5,-3"  stroke="rgba(80,130,220,0.35)" stroke-width="1.2" fill="none"/>
+
+      <!-- OLHO: círculo externo (branco da esclera), pupila e brilho -->
+      <circle cx="34" cy="-6" r="6.5" fill="#d0e8ff"/>   <!-- esclera azulada -->
+      <circle cx="34" cy="-6" r="4.2" fill="#050f22"/>   <!-- pupila -->
+      <circle cx="36"  cy="-8"  r="1.6" fill="white"/>   <!-- reflexo -->
+
+      <!-- BOCA: curvinha simples na ponta do focinho -->
+      <path d="M48,2 Q52,6 48,9"
+            stroke="#0a2550" stroke-width="1.8"
+            fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- ══════════════════════════════════════
+         PEIXE VERDE (direita → nada para esquerda)
+         Cor principal: #5a9e3a
+         Espelhado horizontalmente via JS (scale(-1,1))
+         ══════════════════════════════════════ -->
+    <g id="peixe-verde" filter="url(#brilho)">
+
+      <!-- CAUDA (mesma estrutura do azul) -->
+      <polygon points="-50,0 -75,-28 -68,0"  fill="#3d7225"/>
+      <polygon points="-50,0 -75, 28 -68,0"  fill="#3d7225"/>
+      <line x1="-50" y1="0" x2="-75" y2="-28" stroke="#2a5018" stroke-width="1.2"/>
+      <line x1="-50" y1="0" x2="-75" y2=" 28" stroke="#2a5018" stroke-width="1.2"/>
+      <line x1="-50" y1="0" x2="-78" y2="  0" stroke="#2a5018" stroke-width="1.2"/>
+
+      <!-- CORPO -->
+      <ellipse cx="0" cy="0" rx="50" ry="24" fill="#5a9e3a"/>
+
+      <!-- REFLEXO -->
+      <ellipse cx="-5" cy="-7" rx="24" ry="9" fill="rgba(160,230,120,0.2)"/>
+
+      <!-- BARBATANA DORSAL -->
+      <path d="M-15,-24 Q-2,-44 16,-24" fill="#3d7225" stroke="#2a5018" stroke-width="1"/>
+
+      <!-- BARBATANA PEITORAL -->
+      <ellipse cx="8" cy="11" rx="14" ry="6"
+               fill="#3d7225" opacity="0.85"
+               transform="rotate(20,8,11)"/>
+
+      <!-- BARBATANA ANAL -->
+      <path d="M-5,24 Q4,36 14,24" fill="#3d7225" stroke="#2a5018" stroke-width="0.8"/>
+
+      <!-- ESCAMAS -->
+      <path d="M-10,0 Q-3,-13 7,-4"    stroke="rgba(120,200,80,0.35)" stroke-width="1.2" fill="none"/>
+      <path d="M  2,3 Q  9,-10 18,-2"  stroke="rgba(120,200,80,0.35)" stroke-width="1.2" fill="none"/>
+      <path d="M-22,1 Q-15,-11 -5,-3"  stroke="rgba(120,200,80,0.35)" stroke-width="1.2" fill="none"/>
+
+      <!-- OLHO -->
+      <circle cx="34" cy="-6" r="6.5" fill="#c8e8b0"/>   <!-- esclera esverdeada -->
+      <circle cx="34" cy="-6" r="4.2" fill="#0f1e08"/>   <!-- pupila -->
+      <circle cx="36"  cy="-8"  r="1.6" fill="white"/>   <!-- reflexo -->
+
+      <!-- BOCA -->
+      <path d="M48,2 Q52,6 48,9"
+            stroke="#2a5018" stroke-width="1.8"
+            fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- ══════════════════════════════════════
+         FAÍSCAS DO BEIJO
+         Aparecem quando os peixes se encontram.
+         Posicionadas e animadas pelo JS.
+         ══════════════════════════════════════ -->
+    <g id="beijo" opacity="0" transform="translate(400,300)">
+      <!-- Estrelinhas ao redor -->
+      <text x="-26" y="-20" font-size="17" fill="#ffddee" text-anchor="middle" font-family="serif">✦</text>
+      <text x=" 26" y="-20" font-size="17" fill="#ffddee" text-anchor="middle" font-family="serif">✦</text>
+      <text x="  0" y="-36" font-size="11" fill="white"   text-anchor="middle" font-family="serif">✦</text>
+      <text x="-34" y="  6" font-size=" 9" fill="#ffaac8" text-anchor="middle" font-family="serif">✦</text>
+      <text x=" 34" y="  6" font-size=" 9" fill="#ffaac8" text-anchor="middle" font-family="serif">✦</text>
+
+      <!-- Coraçãozinho pequeno que aparece no beijo,
+           antes do coração grande tomar a tela -->
+      <path d="M0,-50 C-8,-62 -22,-62 -22,-50
+               C-22,-41 -11,-31 0,-21
+               C11,-31 22,-41 22,-50
+               C22,-62 8,-62 0,-50Z"
+            fill="#af3b2f"/>
+    </g>
+
+  </svg><!-- fim do SVG principal -->
+
+
+  <!-- ══════════════════════════════════════════
+       CORAÇÃO GRANDE
+       SVG separado que cresce via transform: scale()
+       controlado pelo JS conforme o scroll
+       ══════════════════════════════════════════ -->
+  <div id="coracao-overlay">
+    <svg id="coracao-svg"
+         viewBox="0 0 200 185"
+         xmlns="http://www.w3.org/2000/svg">
+
+      <!-- Path do coração baseado na imagem de referência:
+           forma clássica, simétrica, pontas arredondadas no topo
+           e ponta fina embaixo — cor sólida #af3b2f -->
+      <path d="M100,170
+               C52,136 6,104 6,58
+               C6,26 26,6 50,6
+               C66,6 82,15 100,35
+               C118,15 134,6 150,6
+               C174,6 194,26 194,58
+               C194,104 148,136 100,170Z"
+            fill="#af3b2f"/>
+
+      <!-- Brilho sutil no topo esquerdo para dar volume -->
+      <path d="M50,24 Q76,12 100,35 Q74,18 50,24Z"
+            fill="rgba(255,255,255,0.15)"/>
+    </svg>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       MENSAGEM FINAL
+       Aparece dentro do coração no final do scroll
+       ══════════════════════════════════════════ -->
+  <div id="mensagem">
+    <div class="msg-topo">feliz aniversário,</div>
+    <div class="msg-linha"></div>
+    <div class="msg-principal">meu romance</div>
+  </div>
+
+
+  <!-- Dica de scroll inicial -->
+  <div id="dica">
+    <div class="dica-texto">role para baixo</div>
+    <div class="dica-seta"></div>
+  </div>
+
+</div><!-- fim do palco -->
+</div><!-- fim do container de scroll -->
+
+
+<!-- ══════════════════════════════════════════════════════
+     JAVASCRIPT — toda a lógica de animação por scroll
+     ══════════════════════════════════════════════════════ -->
+<script>
+  /* ──────────────────────────────────────────
+     1. GERAÇÃO DAS ESTRELAS
+     Cria 110 estrelas com tamanhos e posições
+     aleatórias, distribuídas por toda a tela.
+     As estrelas NÃO somem quando os peixes aparecem —
+     só diminuem levemente quando o coração cresce.
+     ────────────────────────────────────────── */
+  const camadaEstrelas = document.getElementById('estrelas');
+
+  for (let i = 0; i < 110; i++) {
+    const estrela = document.createElement('div');
+    estrela.className = 'estrela';
+
+    // Tamanho aleatório entre 0.5px e 2.5px
+    const tamanho = Math.random() * 2 + 0.5;
+
+    // Posição aleatória em toda a tela
+    const posX = Math.random() * 100;
+    const posY = Math.random() * 100;
+
+    // Velocidade e atraso de piscar únicos para cada estrela
+    const tempo  = 3 + Math.random() * 5;   // entre 3s e 8s
+    const atraso = Math.random() * 5;        // entre 0s e 5s
+
+    estrela.style.cssText = `
+      width:  ${tamanho}px;
+      height: ${tamanho}px;
+      left:   ${posX}%;
+      top:    ${posY}%;
+      --t:    ${tempo}s;
+      --d:    ${atraso}s;
+    `;
+    camadaEstrelas.appendChild(estrela);
+  }
+
+
+  /* ──────────────────────────────────────────
+     2. GERAÇÃO DAS BOLHAS
+     18 bolhas com tamanhos e tempos variados
+     ────────────────────────────────────────── */
+  const camadaBolhas = document.getElementById('bolhas');
+
+  for (let i = 0; i < 18; i++) {
+    const bolha = document.createElement('div');
+    bolha.className = 'bolha';
+
+    const tamanho = Math.random() * 20 + 5;  // entre 5px e 25px
+    const posX    = Math.random() * 100;
+
+    bolha.style.cssText = `
+      width:   ${tamanho}px;
+      height:  ${tamanho}px;
+      left:    ${posX}%;
+      --dur:   ${9 + Math.random() * 10}s;
+      --delay: ${Math.random() * 14}s;
+    `;
+    camadaBolhas.appendChild(bolha);
+  }
+
+
+  /* ──────────────────────────────────────────
+     3. REFERÊNCIAS AOS ELEMENTOS ANIMADOS
+     ────────────────────────────────────────── */
+  const peixeAzul      = document.getElementById('peixe-azul');
+  const peixeVerde     = document.getElementById('peixe-verde');
+  const beijo          = document.getElementById('beijo');
+  const coracaoOverlay = document.getElementById('coracao-overlay');
+  const coracaoSvg     = document.getElementById('coracao-svg');
+  const mensagem       = document.getElementById('mensagem');
+  const dica           = document.getElementById('dica');
+  const palco          = document.getElementById('palco');
+
+  // Centro do viewBox SVG (800×600)
+  const CX = 400; // centro horizontal
+  const CY = 300; // centro vertical
+
+
+  /* ──────────────────────────────────────────
+     4. FUNÇÕES MATEMÁTICAS AUXILIARES
+     ────────────────────────────────────────── */
+
+  // Interpolação linear entre dois valores
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  // Limita um valor entre um mínimo e um máximo
+  function clamp(valor, min, max) {
+    return Math.max(min, Math.min(max, valor));
+  }
+
+  // Easing suave: acelera no início e desacelera no fim
+  function easeInOut(t) {
+    return t < 0.5
+      ? 2 * t * t
+      : -1 + (4 - 2 * t) * t;
+  }
+
+  // Easing com "estica" no final (efeito elástico suave)
+  function easeOutBack(t) {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  }
+
+
+  /* ──────────────────────────────────────────
+     5. FUNÇÃO PRINCIPAL DE ANIMAÇÃO
+     Chamada a cada evento de scroll.
+     "progress" vai de 0 (topo) a 1 (fundo da página).
+     ────────────────────────────────────────── */
+  let ultimoProgresso = -1;
+
+  function aoRolar() {
+    // Calcula o quanto foi rolado (0 = início, 1 = fim)
+    const alturaTotal    = document.getElementById('historia-scroll').scrollHeight - window.innerHeight;
+    const progresso      = clamp(window.scrollY / alturaTotal, 0, 1);
+
+    // Evita recalcular se o scroll não mudou o suficiente
+    if (Math.abs(progresso - ultimoProgresso) < 0.0003) return;
+    ultimoProgresso = progresso;
+
+    // Esconde dica depois de rolar um pouco
+    dica.classList.toggle('oculto', progresso > 0.02);
+
+
+    /* ── FASE 1: PEIXES SE APROXIMAM (scroll 0% → 44%) ──
+       Os peixes partem de longe e nadam em direção ao centro.
+       Um balanço senoidal simula o nado. */
+
+    // p1 vai de 0 a 1 durante os primeiros 44% do scroll
+    const p1  = clamp(progresso / 0.44, 0, 1);
+    const p1e = easeInOut(p1); // suavizado
+
+    // Posição X inicial (longe do centro) e final (próximo)
+    const xInicio = 300; // pixels do centro até a posição inicial
+    const xFim    = 52;  // pixels do centro no momento do beijo
+
+    // Posição atual de cada peixe
+    const xAzul  = CX - lerp(xInicio, xFim, p1e); // peixe da esquerda
+    const xVerde = CX + lerp(xInicio, xFim, p1e); // peixe da direita
+
+    // Balanço vertical (senoidal) que diminui à medida que se aproximam
+    const amplitude = lerp(22, 0, p1e);
+    const balancoY  = Math.sin(progresso * Math.PI * 9) * amplitude;
+
+    // Escala leve: peixes crescem um pouco ao se aproximar
+    const escala = lerp(0.88, 1.0, p1e);
+
+    // Aplica transformações:
+    // Azul: posicionado na esquerda, orientado para direita (normal)
+    peixeAzul.setAttribute('transform',
+      `translate(${xAzul}, ${CY + balancoY}) scale(${escala})`
+    );
+
+    // Verde: posicionado na direita, espelhado horizontalmente
+    // para que também aponte em direção ao centro
+    peixeVerde.setAttribute('transform',
+      `translate(${xVerde}, ${CY - balancoY}) scale(${-escala}, ${escala})`
+    );
+
+
+    /* ── FASE 2: BEIJO / FAÍSCAS (scroll 40% → 60%) ──
+       Aparece uma curva de sino: sobe e desce */
+
+    const p2 = clamp((progresso - 0.40) / 0.20, 0, 1);
+    const opacidadeBeijo = Math.sin(p2 * Math.PI); // curva de sino
+    beijo.setAttribute('opacity', (opacidadeBeijo * 0.95).toFixed(3));
+
+
+    /* ── FASE 3: CORAÇÃO CRESCE E PEIXES SOMEM (scroll 52% → 100%) ── */
+
+    const p3  = clamp((progresso - 0.52) / 0.48, 0, 1);
+    const p3e = easeInOut(p3);
+
+    // Peixes e beijo desaparecem gradualmente
+    const alfaPeixe = clamp(1 - p3 * 3, 0, 1);
+    peixeAzul.style.opacity  = alfaPeixe;
+    peixeVerde.style.opacity = alfaPeixe;
+    beijo.style.opacity      = (opacidadeBeijo * 0.95 * alfaPeixe).toFixed(3);
+
+    // Coração surge: opacity do container vai para 1
+    coracaoOverlay.style.opacity = p3e > 0.01 ? '1' : '0';
+
+    // Escala do coração usando easeOutBack para o efeito de "pop"
+    const escalaCoracao = easeOutBack(p3e);
+    coracaoSvg.style.transform = `scale(${Math.max(0.001, escalaCoracao)})`;
+
+    // Mensagem aparece apenas no trecho final (75% → 100% da fase 3)
+    const opacidadeMensagem = clamp((p3e - 0.72) / 0.28, 0, 1);
+    mensagem.style.opacity = opacidadeMensagem.toFixed(3);
+
+    // Fundo muda de azul-escuro para vermelho-escuro conforme o coração cresce
+    const r = Math.round(lerp(6,  28, p3e));
+    const g = Math.round(lerp(9,   4, p3e));
+    const b = Math.round(lerp(18, 10, p3e));
+    palco.style.background = `rgb(${r},${g},${b})`;
+
+    // Estrelas ficam mais sutis (mas NUNCA somem de vez) quando o coração aparece
+    // Isso mantém as estrelas presentes em toda a animação
+    camadaEstrelas.style.opacity = lerp(1, 0.18, p3e);
+
+    // Bolhas somem junto com os peixes
+    camadaBolhas.style.opacity = lerp(1, 0, p3e);
+  }
+
+  // Registra o ouvinte de scroll (passive=true melhora performance no mobile)
+  window.addEventListener('scroll', aoRolar, { passive: true });
+
+  // Roda uma vez no carregamento para configurar o estado inicial
+  aoRolar();
+</script>
+
+</body>
+</html>
