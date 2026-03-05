@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Feliz Aniversário, Taia ♥</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Montserrat:wght@200;300&display=swap" rel="stylesheet"/>
+  <title>Feliz Aniversário, Taiana ♥</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Montserrat:wght@200;300&family=Syne:wght@400;700&display=swap" rel="stylesheet"/>
 
   <style>
     /* ════════════════════════════════════════════
@@ -148,7 +148,9 @@
 
     /* ════════════════════════════════════════════
        MENSAGEM dentro do coração
-       Aparece somente no final da animação
+       Aparece somente no final da animação.
+       Centralizada no meio exato do coração via
+       flexbox com alinhamento central absoluto.
        ════════════════════════════════════════════ */
     #mensagem {
       position: absolute;
@@ -161,32 +163,36 @@
       opacity: 0;
       pointer-events: none;
       text-align: center;
-      padding: 2rem;
+      /* padding lateral para o texto não encostar nas bordas do coração */
+      padding: 0 18%;
+      /* sobe levemente o texto para compensar a ponta do coração embaixo
+         (o centro visual do coração está um pouco acima do centro geométrico) */
+      padding-bottom: 8%;
     }
 
     .msg-topo {
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-weight: 300;
-      font-size: clamp(1.6rem, 5.5vw, 3.5rem);
-      color: rgba(255, 248, 240, 0.93);
-      letter-spacing: 0.07em;
+      /* Syne: fonte geométrica moderna, exatamente como no convite dela */
+      font-family: 'Syne', sans-serif;
+      font-weight: 400;
+      font-size: clamp(1.4rem, 5vw, 3rem);
+      color: #fff8f0;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
     }
 
     .msg-principal {
-      font-family: 'Cormorant Garamond', serif;
-      font-weight: 300;
-      font-size: clamp(2.6rem, 10vw, 6rem);
+      /* Mesma fonte, mesmo peso — texto unificado como no exemplo */
+      font-family: 'Syne', sans-serif;
+      font-weight: 400;
+      font-size: clamp(1.4rem, 5vw, 3rem);
       color: #fff8f0;
-      letter-spacing: 0.05em;
-      line-height: 1.05;
+      letter-spacing: 0.01em;
+      line-height: 1.3;
     }
 
     .msg-linha {
-      width: 65px;
-      height: 1px;
-      background: rgba(255, 248, 240, 0.35);
-      margin: 1rem auto;
+      /* linha removida para ficar igual ao exemplo (sem divisor) */
+      display: none;
     }
 
     /* ════════════════════════════════════════════
@@ -261,12 +267,6 @@
        xmlns="http://www.w3.org/2000/svg">
 
     <defs>
-      <!-- Gradiente radial para o fundo aquático -->
-      <radialGradient id="grad-fundo" cx="50%" cy="50%" r="70%">
-        <stop offset="0%"   stop-color="#0a1628"/>
-        <stop offset="100%" stop-color="#060912"/>
-      </radialGradient>
-
       <!-- Filtro de brilho suave nos peixes -->
       <filter id="brilho" x="-40%" y="-40%" width="180%" height="180%">
         <feGaussianBlur stdDeviation="4" result="b"/>
@@ -277,15 +277,9 @@
       </filter>
     </defs>
 
-    <!-- Retângulo de fundo da cena -->
-    <rect width="800" height="600" fill="url(#grad-fundo)"/>
-
-    <!-- Linhas de reflexo d'água (decorativas, muito sutis) -->
-    <g opacity="0.04" stroke="#6ab4ff" stroke-width="1">
-      <line x1="0" y1="180" x2="800" y2="184"/>
-      <line x1="0" y1="360" x2="800" y2="356"/>
-      <line x1="0" y1="480" x2="800" y2="483"/>
-    </g>
+    <!-- Fundo do SVG totalmente transparente:
+         o fundo real é o #palco (CSS), onde as estrelas também vivem.
+         Assim as estrelas aparecem atrás dos peixes sem nenhum bloqueio. -->
 
     <!-- ══════════════════════════════════════
          PEIXE AZUL (esquerda → nada para direita)
